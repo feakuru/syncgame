@@ -1,0 +1,10 @@
+{
+    "name": "syncgame",
+    "version": "0.0.1",
+    "description": "a game to test collaboration skills",
+    "dependencies": {
+        "ejs": "^3.1.5",
+        "express": "^4.17.1",
+        "socket.io": "^3.0.3"
+    }
+}
