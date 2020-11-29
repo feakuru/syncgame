@@ -15,7 +15,7 @@
                 <h1>SYNC GAME</h1>
             </div>
         </div>
-        <div class="row">
+        <div class="row" id="initial-screen">
             <div class="col-md-4">&nbsp;</div>
             <div class="col-md-4 text-center my-3">
                 <h3>First, enter your name.</h3>
@@ -36,6 +36,15 @@
             </div>
             <div class="col-md-4">&nbsp;</div>
         </div>
+        <div class="row" id="game-screen">
+            <div class="col-md-4">&nbsp;</div>
+            <div class="col-md-4 text-center my-3">
+                <button class="btn btn-danger btn-lg btn-block"
+                    id="game-btn">
+                    HIT ME
+                </button>
+            </div>
+        </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
@@ -46,21 +55,33 @@
         crossorigin="anonymous"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
+
         $(function () {
+            hideInitialScreen = () => {
+                $('#initial-screen').hide();
+                $('#game-screen').show();
+            }
+            hideGameScreen = () => {
+                $('#initial-screen').show();
+                $('#game-screen').hide();
+            }
+            hideGameScreen();
             var socket = io();
             
-            $('#create-game-btn').click(function (e) {
+            $('#create-game-btn').click((e) => {
                 socket.emit('game create', $('#player_name').val());
-                // reset UI
+                hideInitialScreen();
                 return false;
             });
             
-            $('.join-button').click(function (e) {
-                socket.emit('game join', $('#player_name').val() + '|' + e.target.id.split('|')[1])
+            $('.join-button').click((e) => {
+                socket.emit('game join', $('#player_name').val() + '|' + e.target.id.split('|')[1]);
+                return false;
             });
             
             socket.on('game joined', function() {
                 console.log('game joined!!!!')
+                hideInitialScreen();
             })
         });
     </script>
