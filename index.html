@@ -39,8 +39,9 @@
         <div class="row" id="game-screen">
             <div class="col-md-4">&nbsp;</div>
             <div class="col-md-4 text-center my-3">
+                <p id="score">0</p>
                 <button class="btn btn-danger btn-lg btn-block"
-                    id="game-btn">
+                    id="game-button">
                     HIT ME
                 </button>
             </div>
@@ -60,11 +61,11 @@
             hideInitialScreen = () => {
                 $('#initial-screen').hide();
                 $('#game-screen').show();
-            }
+            };
             hideGameScreen = () => {
                 $('#initial-screen').show();
                 $('#game-screen').hide();
-            }
+            };
             hideGameScreen();
             var socket = io();
             
@@ -82,7 +83,26 @@
             socket.on('game joined', function() {
                 console.log('game joined!!!!')
                 hideInitialScreen();
-            })
+            });
+
+            $('#game-button').click((e) => {
+                if ($(e.target).hasClass('active')) {
+                    socket.emit('score');
+                } else {
+                    socket.emit('button pressed');
+                }
+            });
+
+            socket.on('button pressed', () => {
+                $('#game-button').addClass('active');
+                setTimeout(() => {
+                    $('#game-button').removeClass('active');
+                }, 2000)
+            });
+
+            socket.on('score', score => {
+                $('#score').text(score['score']);
+            });
         });
     </script>
 </body>

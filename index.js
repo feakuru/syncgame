@@ -24,7 +24,7 @@ app.get('/', (req, res) => {
 io.on('connection', (socket) => {
     socket.on('game create', (name) => {
         console.log(name + ' [' + socket.id + '] creates game');
-        games[socket.id] = {'name': name};
+        games[socket.id] = {'name': name, 'score': 0};
     });
 
     socket.on('game join', (message) => {
@@ -54,6 +54,32 @@ io.on('connection', (socket) => {
                 + game_id
             )
         }
+    });
+
+    socket.on('button pressed', () => {
+        console.log('button pressed!');
+        let game_id = (
+            socket.id in games
+                ? socket.id
+                : Object.entries(games).filter(
+                    game => game[1]['player'] === socket.id
+                )[0][0]
+        );
+        io.to(game_id).emit('button pressed');
+        io.to(games[game_id]['player']).emit('button pressed');
+    })
+
+    socket.on('score', () => {
+        let game_id = (
+            socket.id in games
+                ? socket.id
+                : Object.entries(games).filter(
+                    game => game[1]['player'] === socket.id
+                )[0][0]
+        );
+        games[game_id]['score'] += 50;
+        io.to(game_id).emit('score', {'score': games[game_id]['score']});
+        io.to(games[game_id]['player']).emit('score', {'score': games[game_id]['score']});
     });
 
     socket.on('disconnect', () => {
