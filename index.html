@@ -22,12 +22,12 @@
                 <input class="form-control" type="text" name="player_name" id="player_name" placeholder="Smth like syncer1234"/>
                 <h3 class="mt-3">Then join a game:</h3>
                 <div class="list-group mb-5">
-                    <% games.forEach(function(game){ %>
-                        <button class="list-group-item list-group-item-action active join-button" id="join|<%= game['id'] %>">
+                    <% Object.entries(games).map(function([game_id, game]){ %>
+                        <button class="list-group-item list-group-item-action active join-button" id="join|<%= game_id %>">
                             <%= game['name'] %>
                         </button>
                     <% }) %>
-                    <% if (!games.length) { %>
+                    <% if (!Object.keys(games).length) { %>
                         Currently no games
                     <% } %>
                 </div>
@@ -48,14 +48,20 @@
     <script>
         $(function () {
             var socket = io();
+            
             $('#create-game-btn').click(function (e) {
                 socket.emit('game create', $('#player_name').val());
                 // reset UI
                 return false;
             });
+            
             $('.join-button').click(function (e) {
                 socket.emit('game join', $('#player_name').val() + '|' + e.target.id.split('|')[1])
             });
+            
+            socket.on('game joined', function() {
+                console.log('game joined!!!!')
+            })
         });
     </script>
 </body>

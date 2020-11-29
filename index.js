@@ -3,9 +3,10 @@ var ejs = require('ejs');
 var http = require('http').createServer(app);
 var io = require('socket.io')(http);
 
-let games = [];
+let games = {};
 
 app.get('/', (req, res) => {
+    console.log(games);
     ejs.renderFile(
         __dirname + '/index.html',
         { 'games': games },
@@ -23,18 +24,44 @@ app.get('/', (req, res) => {
 io.on('connection', (socket) => {
     socket.on('game create', (name) => {
         console.log(name + ' [' + socket.id + '] creates game');
-        games.push({'id': socket.id, 'name': name});
+        games[socket.id] = {'name': name};
     });
 
     socket.on('game join', (message) => {
         name = message.split('|')[0];
         game_id = message.split('|')[1];
-        console.log(name + ' [' + socket.id + '] joins game ' + game_id);
+        if (game_id in games) {
+            if ('player' in games[game_id]) {
+                console.log(
+                    "not allowing to join game: already joined by "
+                    + games[game_id]['player']
+                );
+            } else {
+                games[game_id]['player'] = socket.id;
+                socket.emit('game joined');
+                console.log(
+                    name
+                    + ' ['
+                    + socket.id
+                    + '] joins game '
+                    + game_id
+                );
+            }
+        }
+        else {
+            console.log(
+                "not allowing to join game: no such game "
+                + game_id
+            )
+        }
     });
 
     socket.on('disconnect', () => {
         console.log(socket.id + ' disconnected');
-        games = games.filter(game => (game['id'] !== socket.id))
+        if (socket.id in games) {
+            delete games[socket.id];
+            console.log('game ' + socket.id + ' deleted')
+        }
     });
 });
 
