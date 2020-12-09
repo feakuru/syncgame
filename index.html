@@ -86,10 +86,13 @@
             });
 
             $('#game-button').click((e) => {
-                if ($(e.target).hasClass('active')) {
-                    socket.emit('score');
-                } else {
-                    socket.emit('button pressed');
+                if (!$(e.target).hasClass('disabled')) {
+                    if ($(e.target).hasClass('active')) {
+                        socket.emit('score');
+                    } else {
+                        socket.emit('button pressed');
+                        $(e.target).addClass('disabled');
+                    }
                 }
             });
 
@@ -102,6 +105,7 @@
 
             socket.on('score', score => {
                 $('#score').text(score['score']);
+                $('#game-button').removeClass('disabled');
             });
         });
     </script>
