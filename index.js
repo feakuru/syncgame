@@ -23,7 +23,7 @@ app.get('/', (req, res) => {
 
 io.on('connection', (socket) => {
     socket.on('game create', (name) => {
-        console.log(name + ' [' + socket.id + '] creates game');
+        console.log(`${name} [${socket.id}] creates game`);
         games[socket.id] = {'name': name, 'score': 0};
     });
 
@@ -33,25 +33,19 @@ io.on('connection', (socket) => {
         if (game_id in games) {
             if ('player' in games[game_id]) {
                 console.log(
-                    "not allowing to join game: already joined by "
-                    + games[game_id]['player']
+                    `not allowing to join game: already joined by ${games[game_id]['player']}`
                 );
             } else {
                 games[game_id]['player'] = socket.id;
                 socket.emit('game joined');
                 console.log(
-                    name
-                    + ' ['
-                    + socket.id
-                    + '] joins game '
-                    + game_id
+                    `${name} [${socket.id}] joins game ${game_id}`
                 );
             }
         }
         else {
             console.log(
-                "not allowing to join game: no such game "
-                + game_id
+                `not allowing to join game: no such game ${game_id}`
             )
         }
     });
