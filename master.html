@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -12,18 +13,17 @@
     <div class="container">
         <div class="row">
             <div class="col-12 text-center">
-                <h1>SYNC GAME</h1>
+                <h1>Hello, Game Master.</h1>
             </div>
         </div>
         <div class="row" id="initial-screen">
             <div class="col-md-4">&nbsp;</div>
             <div class="col-md-4 text-center my-3">
-                <h3>First, enter your name.</h3>
-                <input class="form-control" type="text" name="player-name" id="player-name" placeholder="Smth like syncer1234"/>
-                <h3 class="mt-3">Then join a game:</h3>
+                <h3 class="mt-3">Choose a game to rule over:</h3>
                 <div class="list-group mb-5" id="game-list">
                     <% Object.entries(games).map(function([gameId, game]){ %>
-                        <button class="list-group-item list-group-item-action active join-button" id="join|<%= gameId %>">
+                        <button class="list-group-item list-group-item-action active join-button"
+                            id="join|<%= gameId %>">
                             <%= game['name'] %>
                         </button>
                     <% }) %>
@@ -31,8 +31,6 @@
                         <p id="no-games-text">Currently no games</p>
                     <% } %>
                 </div>
-                <h3 class="mt-3">Or create one</h3>
-                <button class="btn btn-success" id="create-game-btn">Create game</button>
             </div>
             <div class="col-md-4">&nbsp;</div>
         </div>
@@ -40,10 +38,10 @@
             <div class="col-md-4">&nbsp;</div>
             <div class="col-md-4 text-center my-3">
                 <p id="score">0</p>
-                <button class="btn btn-danger btn-lg btn-block"
-                    id="game-button">
-                    HIT ME
-                </button>
+                <label for="timeout">
+                    Timeout (input and press Enter):
+                    <input class="form-control" type="number" name="timeout" id="timeout" value="2000">
+                </label>
             </div>
         </div>
     </div>
@@ -70,15 +68,9 @@
             var socket = io();
 
             var gameSettings = {};
-            
-            $('#create-game-btn').click((e) => {
-                socket.emit('game create', $('#player-name').val());
-                hideInitialScreen();
-                return false;
-            });
-            
+
             var joinButtonClickHandler = (e) => {
-                socket.emit('game join', $('#player-name').val() + '|' + e.target.id.split('|')[1]);
+                socket.emit('game master join', e.target.id.split('|')[1]);
                 return false;
             };
 
@@ -96,40 +88,23 @@
                 $('#no-games-text').hide();
                 $('#game-list').append(newButton);
             });
-            
-            socket.on('game joined', function() {
+
+            socket.on('game joined', function () {
                 console.log('game joined!!!!')
                 hideInitialScreen();
             });
 
-            socket.on('game settings', settings => {
-                gameSettings = settings;
-                console.log(gameSettings);
-            })
-
-            $('#game-button').click((e) => {
-                console.log(gameSettings);
-                if (!$(e.target).hasClass('disabled')) {
-                    if ($(e.target).hasClass('active')) {
-                        socket.emit('score');
-                    } else {
-                        socket.emit('button pressed');
-                        $(e.target).addClass('disabled');
+            $('#timeout').change((e) => {
+                socket.emit(
+                    'game settings change',
+                    {
+                        timeout: parseInt($(e.target).val())
                     }
-                }
-            });
-
-            socket.on('button pressed', () => {
-                $('#game-button').addClass('active');
-                setTimeout(() => {
-                    $('#game-button').removeClass('active');
-                    $('#game-button').removeClass('disabled');
-                }, gameSettings.timeout)
+                )
             });
 
             socket.on('score', score => {
                 $('#score').text(score['score']);
-                $('#game-button').removeClass('disabled');
             });
         });
     </script>

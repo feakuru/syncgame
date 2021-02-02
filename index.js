@@ -3,12 +3,30 @@ var ejs = require('ejs');
 var http = require('http').createServer(app);
 var io = require('socket.io')(http);
 
+const DEFAULT_TIMEOUT = 2000;
+
 let games = {};
 let past_game_logs = [];
+let masteredGameId = null;
 
 app.get('/', (req, res) => {
     ejs.renderFile(
         __dirname + '/index.html',
+        { 'games': games },
+        {},
+        (err, result) => {
+            if (err) {
+                console.log(err);
+            } else {
+                res.send(result);
+            }
+        }
+    )
+});
+
+app.get('/master', (req, res) => {
+    ejs.renderFile(
+        __dirname + '/master.html',
         { 'games': games },
         {},
         (err, result) => {
@@ -36,66 +54,86 @@ app.get('/logs', (req, res) => {
 
 io.on('connection', (socket) => {
     socket.on('game create', (name) => {
+        let settings = {
+            'timeout': DEFAULT_TIMEOUT
+        }
         games[socket.id] = {
             'name': name,
+            'settings': settings, 
             'score': 0,
             'log': [
                 `${new Date()} | ${name} [${socket.id}] creates game`
             ]
         };
+        socket.emit('game settings', settings)
+        io.emit('game created', {'id': socket.id, 'name': name})
     });
 
     socket.on('game join', (message) => {
-        name = message.split('|')[0];
-        game_id = message.split('|')[1];
-        if (game_id in games) {
-            if ('player' in games[game_id]) {
-                games[game_id]['log'].push(
-                    `${new Date()} | not allowing to join game: already joined by ${games[game_id]['player']}`
+        playerName = message.split('|')[0];
+        gameId = message.split('|')[1];
+        if (gameId in games) {
+            if ('player' in games[gameId]) {
+                games[gameId]['log'].push(
+                    `${new Date()} | not allowing to join game: already joined by ${games[gameId]['player']}`
                 )
             } else {
-                games[game_id]['player'] = socket.id;
+                games[gameId]['player'] = socket.id;
                 socket.emit('game joined');
-                games[game_id]['log'].push(
-                    `${new Date()} | ${name} [${socket.id}] joins game ${game_id}`
+                socket.emit('game settings', games[gameId]['settings'])
+                games[gameId]['log'].push(
+                    `${new Date()} | ${playerName} [${socket.id}] joins game ${gameId}`
                 )
             }
         }
         else {
             console.log(
-                `not allowing to join game: no such game ${game_id}`
+                `not allowing to join game: no such game ${gameId}`
             )
         }
     });
 
+    socket.on('game master join', (gameId) => {
+        if (gameId in games) {
+            masteredGameId = gameId;
+        }
+        socket.emit('game joined');
+    });
+
+    socket.on('game settings change', settings => {
+        games[masteredGameId]['settings'] = settings;
+        io.to(masteredGameId).emit('game settings', settings);
+        io.to(games[masteredGameId]['player']).emit('game settings', settings);
+    });
+
     socket.on('button pressed', () => {
-        let game_id = (
+        let gameId = (
             socket.id in games
                 ? socket.id
                 : Object.entries(games).filter(
                     game => game[1]['player'] === socket.id
                 )[0][0]
         );
-        io.to(game_id).emit('button pressed');
-        io.to(games[game_id]['player']).emit('button pressed');
-        games[game_id]['log'].push(
+        io.to(gameId).emit('button pressed');
+        io.to(games[gameId]['player']).emit('button pressed');
+        games[gameId]['log'].push(
             `${new Date()} | button pressed by ${socket.id}`
         )
     })
 
     socket.on('score', () => {
-        let game_id = (
+        let gameId = (
             socket.id in games
                 ? socket.id
                 : Object.entries(games).filter(
                     game => game[1]['player'] === socket.id
                 )[0][0]
         );
-        games[game_id]['score'] += 50;
-        io.to(game_id).emit('score', {'score': games[game_id]['score']});
-        io.to(games[game_id]['player']).emit('score', { 'score': games[game_id]['score'] });
-        games[game_id]['log'].push(
-            `${new Date()} | score updated to ${games[game_id]['score']}`
+        games[gameId]['score'] += 50;
+        io.to(gameId).emit('score', {'score': games[gameId]['score']});
+        io.to(games[gameId]['player']).emit('score', { 'score': games[gameId]['score'] });
+        games[gameId]['log'].push(
+            `${new Date()} | score updated to ${games[gameId]['score']}`
         )
     });
 

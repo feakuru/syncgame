@@ -5,6 +5,10 @@
     "dependencies": {
         "ejs": "^3.1.5",
         "express": "^4.17.1",
-        "socket.io": "^3.0.3"
+        "forever": "^3.0.4",
+        "socket.io": "^3.1.0"
+    },
+    "scripts": {
+        "start": "forever -w --minUptime=1000 --spinSleepTime=1000 index.js"
     }
 }
