@@ -4,10 +4,12 @@ var http = require('http').createServer(app);
 var io = require('socket.io')(http);
 
 const DEFAULT_TIMEOUT = 2000;
+const DEFAULT_INTERVAL = 0;
 
 let games = {};
 let past_game_logs = [];
 let masteredGameId = null;
+let masterId = null;
 
 app.get('/', (req, res) => {
     ejs.renderFile(
@@ -52,10 +54,25 @@ app.get('/logs', (req, res) => {
     )
 });
 
+let emitToParticipants = (gameId, event, data) => {
+    if (masteredGameId === gameId) {
+        io.to(gameId).to(games[gameId]['player']).to(masterId).emit(
+            event,
+            data
+        );
+    } else {
+        io.to(gameId).to(games[gameId]['player']).emit(
+            event,
+            data
+        );
+    }
+}
+
 io.on('connection', (socket) => {
     socket.on('game create', (name) => {
         let settings = {
-            'timeout': DEFAULT_TIMEOUT
+            'timeout': DEFAULT_TIMEOUT,
+            'interval': DEFAULT_INTERVAL
         }
         games[socket.id] = {
             'name': name,
@@ -97,13 +114,23 @@ io.on('connection', (socket) => {
         if (gameId in games) {
             masteredGameId = gameId;
         }
+        masterId = socket.id;
         socket.emit('game joined');
+        games[gameId]['log'].push(
+            `${new Date()} | master ${socket.id} joined game`
+        )
     });
 
     socket.on('game settings change', settings => {
-        games[masteredGameId]['settings'] = settings;
-        io.to(masteredGameId).emit('game settings', settings);
-        io.to(games[masteredGameId]['player']).emit('game settings', settings);
+        let newSettings = {
+            ...games[masteredGameId]['settings'],
+            ...settings
+        };
+        games[masteredGameId]['settings'] = newSettings;
+        emitToParticipants(masteredGameId, 'game settings', newSettings);
+        games[gameId]['log'].push(
+            `${new Date()} | settings changed: ${JSON.stringify(newSettings)}`
+        )
     });
 
     socket.on('button pressed', () => {
@@ -114,8 +141,7 @@ io.on('connection', (socket) => {
                     game => game[1]['player'] === socket.id
                 )[0][0]
         );
-        io.to(gameId).emit('button pressed');
-        io.to(games[gameId]['player']).emit('button pressed');
+        emitToParticipants(gameId, 'button pressed');
         games[gameId]['log'].push(
             `${new Date()} | button pressed by ${socket.id}`
         )
@@ -130,8 +156,9 @@ io.on('connection', (socket) => {
                 )[0][0]
         );
         games[gameId]['score'] += 50;
-        io.to(gameId).emit('score', {'score': games[gameId]['score']});
-        io.to(games[gameId]['player']).emit('score', { 'score': games[gameId]['score'] });
+        
+        emitToParticipants(gameId, 'score', { 'score': games[gameId]['score'] })
+        
         games[gameId]['log'].push(
             `${new Date()} | score updated to ${games[gameId]['score']}`
         )
@@ -146,6 +173,6 @@ io.on('connection', (socket) => {
     });
 });
 
-http.listen(3000, () => {
-    console.log('listening on *:3000');
+http.listen(4411, () => {
+    console.log('listening on *:4411');
 });

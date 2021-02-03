@@ -38,9 +38,19 @@
             <div class="col-md-4">&nbsp;</div>
             <div class="col-md-4 text-center my-3">
                 <p id="score">0</p>
+                <p>
+                    The <b>timeout</b> determines how long the button stays inactive after one player clicks it.
+                </p>
+                <p>
+                    The <b>interval</b> determines how often players can receive points.
+                </p>
                 <label for="timeout">
                     Timeout (input and press Enter):
                     <input class="form-control" type="number" name="timeout" id="timeout" value="2000">
+                </label>
+                <label for="Interval">
+                    Interval (input and press Enter):
+                    <input class="form-control" type="number" name="interval" id="interval" value="0">
                 </label>
             </div>
         </div>
@@ -99,6 +109,15 @@
                     'game settings change',
                     {
                         timeout: parseInt($(e.target).val())
+                    }
+                )
+            });
+
+            $('#interval').change((e) => {
+                socket.emit(
+                    'game settings change',
+                    {
+                        interval: parseInt($(e.target).val())
                     }
                 )
             });
