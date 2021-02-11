@@ -5,6 +5,8 @@ var io = require('socket.io')(http);
 
 const DEFAULT_TIMEOUT = 2000;
 const DEFAULT_INTERVAL = 0;
+const DEFAULT_CLICKS_TO_UP_SCORE = 1;
+const DEFAULT_UP_SCORE_TIMEOUT = 0;
 
 let games = {};
 let past_game_logs = [];
@@ -72,12 +74,16 @@ io.on('connection', (socket) => {
     socket.on('game create', (name) => {
         let settings = {
             'timeout': DEFAULT_TIMEOUT,
-            'interval': DEFAULT_INTERVAL
+            'interval': DEFAULT_INTERVAL,
+            'clicksToUpScore': DEFAULT_CLICKS_TO_UP_SCORE,
+            'upScoreTimeout': DEFAULT_UP_SCORE_TIMEOUT
         }
         games[socket.id] = {
             'name': name,
             'settings': settings, 
             'score': 0,
+            'clicks': 0,
+            'canUpScore': true,
             'log': [
                 `${new Date()} | ${name} [${socket.id}] creates game`
             ]
@@ -155,13 +161,30 @@ io.on('connection', (socket) => {
                     game => game[1]['player'] === socket.id
                 )[0][0]
         );
-        games[gameId]['score'] += 50;
-        
-        emitToParticipants(gameId, 'score', { 'score': games[gameId]['score'] })
-        
         games[gameId]['log'].push(
-            `${new Date()} | score updated to ${games[gameId]['score']}`
+            `${new Date()} | button pressed in time`
         )
+        games[gameId]['clicks'] += 1;
+        setTimeout(
+            () => {
+                games[gameId]['canUpScore'] = true;
+            },
+            games[gameId]['settings']['upScoreTimeout']
+        );
+        if (
+                games[gameId]['canUpScore']
+                && (
+                    games[gameId]['clicks']
+                    >= games[gameId]['settings']['clicksToUpScore']
+                )) {
+            games[gameId]['canUpScore'] = false;
+            games[gameId]['clicks'] = 0;
+            games[gameId]['score'] += 50;
+            games[gameId]['log'].push(
+                `${new Date()} | score updated to ${games[gameId]['score']}`
+            )
+        }
+        emitToParticipants(gameId, 'score', { 'score': games[gameId]['score'] });
     });
 
     socket.on('disconnect', () => {

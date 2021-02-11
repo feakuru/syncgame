@@ -110,7 +110,7 @@
             $('#game-button').click((e) => {
                 console.log(gameSettings);
                 if (!$(e.target).hasClass('disabled')) {
-                    if ($(e.target).hasClass('active')) {
+                    if ($(e.target).hasClass('can-score')) {
                         socket.emit('score');
                     } else {
                         socket.emit('button pressed');
@@ -120,9 +120,9 @@
             });
 
             socket.on('button pressed', () => {
-                $('#game-button').addClass('active');
+                $('#game-button').addClass('can-score');
                 setTimeout(() => {
-                    $('#game-button').removeClass('active');
+                    $('#game-button').removeClass('can-score');
                     $('#game-button').removeClass('disabled');
                 }, gameSettings.timeout)
             });

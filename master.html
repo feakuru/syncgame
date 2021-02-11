@@ -48,9 +48,17 @@
                     Timeout (input and press Enter):
                     <input class="form-control" type="number" name="timeout" id="timeout" value="2000">
                 </label>
-                <label for="Interval">
+                <label for="interval">
                     Interval (input and press Enter):
                     <input class="form-control" type="number" name="interval" id="interval" value="0">
+                </label>
+                <label for="up-score-timeout">
+                    Score update timeout (input and press Enter):
+                    <input class="form-control" type="number" name="up-score-timeout" id="up-score-timeout" value="0">
+                </label>
+                <label for="clicks-to-up-score">
+                    Amount of clicks needed to up score (input and press Enter):
+                    <input class="form-control" type="number" name="clicks-to-up-score" id="clicks-to-up-score" value="1">
                 </label>
             </div>
         </div>
@@ -109,6 +117,24 @@
                     'game settings change',
                     {
                         timeout: parseInt($(e.target).val())
+                    }
+                )
+            });
+
+            $('#up-score-timeout').change((e) => {
+                socket.emit(
+                    'game settings change',
+                    {
+                        upScoreTimeout: parseInt($(e.target).val())
+                    }
+                )
+            });
+
+            $('#clicks-to-up-score').change((e) => {
+                socket.emit(
+                    'game settings change',
+                    {
+                        clicksToUpScore: parseInt($(e.target).val())
                     }
                 )
             });
